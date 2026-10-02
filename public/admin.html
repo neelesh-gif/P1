@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Host Panel - LocalChat Admin</title>
+  <meta name="description" content="Host administrator panel for LocalChat real-time LAN server.">
+  <!-- 100% Self-Contained Stylesheets (No External CDNs) -->
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+  <div class="ambient-glow"></div>
+
+  <div class="admin-layout">
+    <!-- Admin Top Navbar -->
+    <header class="admin-navbar">
+      <div class="admin-brand">
+        <div class="admin-logo-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+          </svg>
+        </div>
+        <div class="admin-title-group">
+          <h1>LocalChat <span class="badge badge-admin">Host Admin</span></h1>
+        </div>
+      </div>
+
+      <div class="admin-nav-actions">
+        <span class="badge badge-online">
+          Host LAN: <strong id="host-lan-ip" style="font-family:var(--font-mono); margin-left:4px;">Connecting...</strong>
+        </span>
+        <button id="btn-purge-room" class="btn btn-outline-danger btn-sm" title="Instantly wipe chat history, tokens, and temporary files">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          Purge Room
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="admin-content">
+      <!-- Stat Counter Grid -->
+      <section class="stat-grid">
+        <div class="stat-card stat-users">
+          <div class="stat-info">
+            <span class="stat-label">Active Users</span>
+            <span id="stat-active-users" class="stat-value">0</span>
+          </div>
+          <div class="stat-icon">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </div>
+        </div>
+
+        <div class="stat-card stat-queue">
+          <div class="stat-info">
+            <span class="stat-label">Approval Queue</span>
+            <span id="stat-pending-queue" class="stat-value">0</span>
+          </div>
+          <div class="stat-icon">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+        </div>
+
+        <div class="stat-card stat-tokens">
+          <div class="stat-info">
+            <span class="stat-label">Active Invites</span>
+            <span id="stat-active-tokens" class="stat-value">0</span>
+          </div>
+          <div class="stat-icon">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+        </div>
+
+        <div class="stat-card stat-bans">
+          <div class="stat-info">
+            <span class="stat-label">Banned IPs</span>
+            <span id="stat-banned-ips" class="stat-value">0</span>
+          </div>
+          <div class="stat-icon">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- GATEKEEPER APPROVAL QUEUE -->
+      <section class="admin-section">
+        <div class="section-header">
+          <div class="section-title">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            Gatekeeper Approval Queue
+          </div>
+          <span class="badge badge-pending">Real-Time Requests</span>
+        </div>
+        <div class="section-body">
+          <div id="queue-empty" style="text-align:center; padding:24px; color:var(--text-muted); font-size:0.9rem;">
+            No pending join requests. When a friend opens an invite link, their request will appear here for your review.
+          </div>
+          <div id="queue-container" class="queue-grid">
+            <!-- Pending requests rendered here -->
+          </div>
+        </div>
+      </section>
+
+      <!-- LIVE CONNECTIONS ROSTER -->
+      <section class="admin-section">
+        <div class="section-header">
+          <div class="section-title">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+            </svg>
+            Live Connected Users
+          </div>
+          <span class="badge badge-online">LAN Sockets</span>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nickname</th>
+                <th>Local IP Address</th>
+                <th>Device / OS</th>
+                <th>Socket ID</th>
+                <th>Connected Time</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="roster-tbody">
+              <tr>
+                <td colspan="6" class="empty-cell">No active users connected currently.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- INVITE LINK & QR CODE GENERATOR -->
+      <section class="admin-section">
+        <div class="section-header">
+          <div class="section-title">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+            Invite Link Generator & QR Code
+          </div>
+          <span class="badge" style="background:rgba(99,102,241,0.15); color:#818cf8;">Wi-Fi Access</span>
+        </div>
+        <div class="section-body">
+          <div class="invite-generator-grid">
+            <!-- Form -->
+            <div>
+              <form id="invite-form" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom:16px;">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label for="invite-name" class="form-label">Link Label (Optional)</label>
+                  <input type="text" id="invite-name" class="form-control" placeholder="e.g. Friends Party, Bob's Phone">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label for="invite-max-uses" class="form-label">Max Uses</label>
+                  <select id="invite-max-uses" class="form-control">
+                    <option value="1">Single-use (1 person)</option>
+                    <option value="5" selected>5 people</option>
+                    <option value="10">10 people</option>
+                    <option value="0">Unlimited</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label for="invite-expiry" class="form-label">Expiration</label>
+                  <select id="invite-expiry" class="form-control">
+                    <option value="15">15 minutes</option>
+                    <option value="60" selected>1 hour</option>
+                    <option value="720">12 hours</option>
+                    <option value="1440">24 hours</option>
+                    <option value="0">Never expires</option>
+                  </select>
+                </div>
+                <div style="display:flex; align-items:flex-end;">
+                  <button type="submit" class="btn btn-primary" style="width:100%; padding:10px;">
+                    Generate Invite Link
+                  </button>
+                </div>
+              </form>
+
+              <!-- Generated Link Display -->
+              <div id="generated-link-box" style="display:none; background:rgba(15,23,42,0.8); border:1px solid var(--accent-primary-glow); border-radius:var(--radius-md); padding:16px; margin-top:16px;">
+                <label class="form-label" style="color:var(--accent-cyan); font-weight:600;">Shareable LAN Invite URL:</label>
+                <div style="display:flex; gap:10px; margin-top:6px;">
+                  <input type="text" id="generated-url" class="form-control" readonly style="font-family:var(--font-mono); font-size:0.85rem; color:#f8fafc;">
+                  <button type="button" id="btn-copy-generated" class="btn btn-success" style="white-space:nowrap;">
+                    Copy URL
+                  </button>
+                </div>
+                <p style="font-size:0.8rem; color:var(--text-muted); margin-top:8px;">
+                  Friends on the same Wi-Fi network can open this link on their phone or laptop.
+                </p>
+              </div>
+
+              <!-- Active Tokens Table -->
+              <div style="margin-top:24px;">
+                <h4 style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:10px;">Active Invite Links</h4>
+                <div class="table-responsive">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Label</th>
+                        <th>Token</th>
+                        <th>Uses</th>
+                        <th>Expires</th>
+                        <th>Status</th>
+                        <th>URL</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tokens-tbody">
+                      <tr><td colspan="7" class="empty-cell">No invite tokens created yet.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Instant QR Code Box for Mobile Friends -->
+            <div class="qr-code-box">
+              <h4 style="font-size:0.9rem; font-weight:600; margin-bottom:12px; color:var(--text-primary);">
+                Scan to Join
+              </h4>
+              <div class="qr-canvas-wrapper">
+                <canvas id="qr-canvas" width="160" height="160"></canvas>
+              </div>
+              <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.4;">
+                Friends can scan this QR code with their phone camera on the same Wi-Fi network.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BANNED LOCAL IPS -->
+      <section class="admin-section">
+        <div class="section-header">
+          <div class="section-title">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+            </svg>
+            Banned Local IP Addresses
+          </div>
+          <span class="badge" style="background:var(--danger-bg); color:#f87171;">Access Blacklist</span>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>IP Address</th>
+                <th>Reason</th>
+                <th>Banned At</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="bans-tbody">
+              <tr>
+                <td colspan="4" class="empty-cell">No IP addresses are currently banned.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ADMIN AUTH MODAL -->
+  <div id="admin-auth-modal" class="modal-backdrop" style="display:none;">
+    <div class="join-card glass-panel">
+      <div class="admin-logo-icon" style="width:50px; height:50px; border-radius:14px; margin:0 auto 16px;">
+        <svg viewBox="0 0 24 24" style="width:26px; height:26px; fill:#fff;">
+          <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+        </svg>
+      </div>
+      <h2>Admin Authentication</h2>
+      <p class="subtitle">Enter the Master Admin Secret Key printed on server startup</p>
+
+      <form id="admin-auth-form">
+        <div class="form-group">
+          <label for="admin-key-input" class="form-label">Master Admin Key</label>
+          <input type="password" id="admin-key-input" class="form-control" placeholder="Enter key or check console" required autofocus autocomplete="off">
+        </div>
+        <div id="admin-auth-error" style="display:none; color:#f87171; font-size:0.85rem; margin-bottom:14px; background:rgba(239,68,68,0.15); padding:8px 12px; border-radius:6px; border:1px solid rgba(239,68,68,0.3);"></div>
+        <button type="submit" class="btn btn-primary" style="width:100%; padding:12px;">
+          Unlock Dashboard
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- PURGE CONFIRMATION MODAL -->
+  <div id="purge-modal" class="confirm-modal" style="display:none;">
+    <div class="confirm-card">
+      <div style="width:48px; height:48px; border-radius:50%; background:var(--danger-bg); display:flex; align-items:center; justify-content:center; margin:0 auto 14px; color:#f87171;">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </div>
+      <h3>Purge Room Data?</h3>
+      <p>
+        This will permanently erase all chat messages, flush all temporary file uploads from server disk, and revoke all friend invite links.
+      </p>
+      <div class="confirm-actions">
+        <button type="button" id="btn-cancel-purge" class="btn btn-secondary">Cancel</button>
+        <button type="button" id="btn-confirm-purge" class="btn btn-danger">Yes, Purge Everything</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Self-hosted Scripts (Zero External Dependencies) -->
+  <script src="/vendor/socket.io.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/qrcode.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>
